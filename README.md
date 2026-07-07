@@ -98,4 +98,4 @@ Effectue une opération arithmétique.
 
 ## Auteur
 
-Projet réalisé dans le cadre d'un stage — Ibrahima Thiam (Snowden)
+Projet réalisé dans le cadre d'un stage — Ibrahima Thiam
