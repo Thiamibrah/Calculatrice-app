@@ -1,100 +1,155 @@
 # Calculatrice React + Flask
 
-Application de calculatrice avec une architecture séparée : un frontend **React** (Vite) pour l'interface, et un backend **Flask** qui expose une API REST effectuant les calculs.
+Calculatrice full-stack développée en 4 phases progressives, avec un backend Python/Flask et un frontend React/Vite.
+
+---
 
 ## Stack technique
 
-- **Frontend** : React 18, Vite
-- **Backend** : Flask 3, Flask-CORS
-- **Communication** : API REST JSON
+| Couche    | Technologie                        |
+|-----------|------------------------------------|
+| Frontend  | React 18, Vite, CSS variables      |
+| Backend   | Python 3.12, Flask 3, Flask-CORS   |
+| Stockage  | SQLite (historique)                |
+| Tests     | pytest                             |
 
-## Architecture
-
-```
-calculatrice-app/
-├── backend/
-│   ├── app.py              # API Flask (routes + logique de calcul)
-│   └── requirements.txt    # Dépendances Python
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx         # Composant principal (interface calculatrice)
-│   │   ├── App.css         # Styles
-│   │   ├── api.js          # Appels HTTP vers le backend
-│   │   └── main.jsx        # Point d'entrée React
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.js
-└── README.md
-```
+---
 
 ## Installation et lancement
 
-### 1. Backend (Flask)
+### Prérequis
+- Python 3.10+ (`py --version`)
+- Node.js 18+ (`node --version`)
+
+### Backend
 
 ```bash
 cd backend
-python3 -m venv venv
-source venv/bin/activate       # Sous Windows : venv\Scripts\activate
+py -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Linux/macOS
 pip install -r requirements.txt
 python app.py
+# → http://127.0.0.1:5001
 ```
 
-Le serveur démarre sur **http://127.0.0.1:5000**
-
-### 2. Frontend (React)
-
-Dans un second terminal :
+### Frontend
 
 ```bash
 cd frontend
 npm install
 npm run dev
+# → http://localhost:5173
 ```
 
-L'application démarre sur **http://127.0.0.1:5173**
+---
 
-> Le fichier `vite.config.js` redirige automatiquement les appels `/api/*` vers le backend Flask (port 5000), donc pas de configuration CORS supplémentaire nécessaire côté navigateur.
+## Fonctionnalités
 
-## API — documentation
+### Phase 1 — MVP fonctionnel
+- Opérations de base : `+`, `-`, `×`, `÷`
+- Gestion division par zéro
+- Communication frontend ↔ backend via API REST
 
-### `GET /api/health`
-Vérifie que le serveur est actif.
+### Phase 2 — Robustesse
+- Validation complète des entrées (NaN, Infinity, overflow)
+- Pourcentage `%` avec contexte (`150 + 20%` → `30`)
+- Changement de signe `±`
+- Clavier physique (`0-9`, `+`, `-`, `*`, `/`, `Enter`, `Escape`, `Backspace`, `%`)
+- Bouton ⌫ pour effacer le dernier chiffre
+- Opérateur actif mis en surbrillance
 
-**Réponse 200 :**
-```json
-{ "status": "ok" }
-```
+### Phase 3 — Fonctions scientifiques
+- Panneau scientifique (bouton **Sci** / **Basique**)
+- Fonctions : `sin`, `cos`, `tan` (en degrés), `log₁₀`, `ln`
+- `√`, `x²`, `xʸ`, `1/x`, `n!`
+- Constantes : `π`, `e`
+- Parenthèses `( )` avec évaluation imbriquée
+- Raccourcis clavier en mode sci : `s` `c` `t` `r` `l` `n` `!` `^` `(` `)`
 
-### `POST /api/calculate`
-Effectue une opération arithmétique.
+### Phase 4 — Confort et finition
+- **Historique** : stockage SQLite, liste des 50 derniers calculs, clic pour réutiliser, suppression individuelle ou totale
+- **Mémoire** : `MC`, `MR`, `M+`, `M-` avec indicateur `M` sur l'écran
+- **Thème** : bascule clair ☀️ / sombre 🌙 via variables CSS
+- **Responsive** : adapté mobile et desktop
+- **Tests** : suite pytest couvrant toutes les routes et fonctions
 
-**Corps de la requête :**
+---
+
+## API REST
+
+### Calcul
+
+| Méthode | Route            | Description                        |
+|---------|------------------|------------------------------------|
+| POST    | `/api/calculate` | Effectue un calcul                 |
+| GET     | `/api/health`    | Statut du serveur                  |
+
+**Corps POST `/api/calculate`**
 ```json
 {
-  "a": 5,
-  "b": 3,
-  "operation": "add"
+  "a": 20,
+  "b": 150,
+  "operation": "percent",
+  "expression": "20% de 150"
 }
 ```
 
-**Opérations disponibles :** `add`, `subtract`, `multiply`, `divide`
+Opérations disponibles : `add`, `subtract`, `multiply`, `divide`, `pow`, `percent`, `toggle_sign`, `sqrt`, `square`, `inverse`, `sin`, `cos`, `tan`, `log`, `ln`, `factorial`, `pi`, `euler`
 
-**Réponse 200 (succès) :**
-```json
-{ "result": 8.0 }
+### Historique
+
+| Méthode | Route                  | Description                |
+|---------|------------------------|----------------------------|
+| GET     | `/api/history`         | Liste des calculs (max 50) |
+| DELETE  | `/api/history`         | Efface tout l'historique   |
+| DELETE  | `/api/history/<id>`    | Supprime une entrée        |
+
+### Mémoire
+
+| Méthode | Route                  | Description     |
+|---------|------------------------|-----------------|
+| GET     | `/api/memory`          | Lire la mémoire |
+| POST    | `/api/memory/add`      | M+              |
+| POST    | `/api/memory/subtract` | M-              |
+| POST    | `/api/memory/clear`    | MC              |
+
+---
+
+## Tests
+
+```bash
+cd backend
+venv\Scripts\activate
+pytest test_app.py -v
 ```
 
-**Réponse 400 (erreur, ex. division par zéro) :**
-```json
-{ "error": "Division par zéro impossible" }
+Couverture : opérations de base, cas limites (division par zéro, sqrt négatif, tan indéfini, factorielle décimale…), historique SQLite, mémoire.
+
+---
+
+## Structure du projet
+
+```
+calculatrice-app/
+├── backend/
+│   ├── app.py              # API Flask
+│   ├── test_app.py         # Tests pytest
+│   ├── requirements.txt
+│   └── calculatrice.db     # Créé automatiquement au lancement
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx         # Composant principal
+│   │   ├── App.css         # Styles + variables de thème
+│   │   ├── api.js          # Couche réseau
+│   │   └── main.jsx
+│   ├── index.html
+│   ├── vite.config.js
+│   └── package.json
+└── render.yaml             # Configuration déploiement Render
 ```
 
-## Fonctionnalités — État d'avancement
-
-- [x] Phase 1 — Opérations de base (+, -, ×, ÷) avec architecture front/back fonctionnelle
-- [ ] Phase 2 — Robustesse (validation complète, clavier physique, %, ±)
-- [ ] Phase 3 — Fonctions scientifiques (√, x², parenthèses, trigonométrie)
-- [ ] Phase 4 — Confort (historique, mémoire, thème clair/sombre, tests)
+---
 
 ## Auteur
 
