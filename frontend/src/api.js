@@ -5,7 +5,11 @@
  * Phase 3 : fonctions scientifiques
  * Phase 4 : historique, mémoire
  */
-const API_BASE = '/api'
+// En production, VITE_API_URL pointe vers le backend Render
+// En développement, le proxy Vite redirige /api vers localhost:5001
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : '/api'
 
 async function callApi(body) {
   const response = await fetch(`${API_BASE}/calculate`, {
